@@ -119,7 +119,7 @@ func main() {
 				Aliases: []string{"c"},
 				Usage:   "upper limit of the number of concurrent scans",
 				Action: func(ctx *cli.Context, v uint64) error {
-					if v <= 1 {
+					if v < 1 {
 						return fmt.Errorf("concurrency value %v is not greater than or equal to 1", v)
 					}
 					return nil
