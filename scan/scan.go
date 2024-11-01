@@ -106,8 +106,8 @@ func (ds *DirScanner) scanDir(dirCh chan<- string, fileCh chan<- string, errCh c
 	wg := sync.WaitGroup{}
 	semCh := make(chan int, ds.concurrency)
 
-	var scanDir func(string)
-	scanDir = func(dir string) {
+	var scan func(string)
+	scan = func(dir string) {
 		defer wg.Done()
 
 		semCh <- 1
@@ -124,7 +124,7 @@ func (ds *DirScanner) scanDir(dirCh chan<- string, fileCh chan<- string, errCh c
 			path := path.Join(dir, entry.Name())
 			if entry.IsDir() {
 				wg.Add(1)
-				go scanDir(path)
+				go scan(path)
 			} else {
 				fileCh <- path
 			}
@@ -132,7 +132,7 @@ func (ds *DirScanner) scanDir(dirCh chan<- string, fileCh chan<- string, errCh c
 	}
 
 	wg.Add(1)
-	scanDir(ds.root)
+	scan(ds.root)
 
 	wg.Wait()
 	close(dirCh)
