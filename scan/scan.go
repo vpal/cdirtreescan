@@ -57,7 +57,7 @@ func (ds *DirScanner) Count() (errs []error) {
 		}
 	}()
 
-	ds.scanDirTree(dirCh, fileCh, errCh)
+	ds.scanDir(dirCh, fileCh, errCh)
 
 	wg.Wait()
 	fmt.Printf("Number of directories: %v\n", dirCount)
@@ -96,13 +96,13 @@ func (ds *DirScanner) List() (errs []error) {
 		}
 	}()
 
-	ds.scanDirTree(dirCh, fileCh, errCh)
+	ds.scanDir(dirCh, fileCh, errCh)
 
 	wg.Wait()
 	return errs
 }
 
-func (ds *DirScanner) scanDirTree(dirCh chan<- string, fileCh chan<- string, errCh chan<- error) {
+func (ds *DirScanner) scanDir(dirCh chan<- string, fileCh chan<- string, errCh chan<- error) {
 	wg := sync.WaitGroup{}
 	semCh := make(chan int, ds.concurrency)
 
