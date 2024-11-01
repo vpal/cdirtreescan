@@ -8,15 +8,15 @@ import (
 	"sync"
 )
 
-type DirScanner struct {
+type DirTreeScanner struct {
 	ctx         context.Context
 	root        string
 	resChSize   uint64
 	concurrency uint64
 }
 
-func NewDirScanner(ctx context.Context, root string, concurrency uint64) *DirScanner {
-	return &DirScanner{
+func NewDirTreeScanner(ctx context.Context, root string, concurrency uint64) *DirTreeScanner {
+	return &DirTreeScanner{
 		ctx:         ctx,
 		root:        root,
 		concurrency: concurrency,
@@ -24,7 +24,7 @@ func NewDirScanner(ctx context.Context, root string, concurrency uint64) *DirSca
 	}
 }
 
-func (ds *DirScanner) Count() (errs []error) {
+func (ds *DirTreeScanner) Count() (errs []error) {
 	var (
 		wg        sync.WaitGroup
 		dirCh     = make(chan string, ds.resChSize)
@@ -57,7 +57,7 @@ func (ds *DirScanner) Count() (errs []error) {
 		}
 	}()
 
-	ds.scanDir(dirCh, fileCh, errCh)
+	ds.scanDirTree(dirCh, fileCh, errCh)
 
 	wg.Wait()
 	fmt.Printf("Number of directories: %v\n", dirCount)
@@ -65,7 +65,7 @@ func (ds *DirScanner) Count() (errs []error) {
 	return errs
 }
 
-func (ds *DirScanner) List() (errs []error) {
+func (ds *DirTreeScanner) List() (errs []error) {
 	var (
 		wg     sync.WaitGroup
 		dirCh  = make(chan string, ds.resChSize)
@@ -96,18 +96,18 @@ func (ds *DirScanner) List() (errs []error) {
 		}
 	}()
 
-	ds.scanDir(dirCh, fileCh, errCh)
+	ds.scanDirTree(dirCh, fileCh, errCh)
 
 	wg.Wait()
 	return errs
 }
 
-func (ds *DirScanner) scanDir(dirCh chan<- string, fileCh chan<- string, errCh chan<- error) {
+func (ds *DirTreeScanner) scanDirTree(dirCh chan<- string, fileCh chan<- string, errCh chan<- error) {
 	wg := sync.WaitGroup{}
 	semCh := make(chan int, ds.concurrency)
 
-	var scan func(string)
-	scan = func(dir string) {
+	var scanDir func(string)
+	scanDir = func(dir string) {
 		defer wg.Done()
 
 		semCh <- 1
@@ -124,7 +124,7 @@ func (ds *DirScanner) scanDir(dirCh chan<- string, fileCh chan<- string, errCh c
 			path := path.Join(dir, entry.Name())
 			if entry.IsDir() {
 				wg.Add(1)
-				go scan(path)
+				go scanDir(path)
 			} else {
 				fileCh <- path
 			}
@@ -132,7 +132,7 @@ func (ds *DirScanner) scanDir(dirCh chan<- string, fileCh chan<- string, errCh c
 	}
 
 	wg.Add(1)
-	scan(ds.root)
+	scanDir(ds.root)
 
 	wg.Wait()
 	close(dirCh)

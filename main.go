@@ -56,7 +56,7 @@ func main() {
 					if err != nil {
 						return err
 					}
-					ds := scan.NewDirScanner(cCtx.Context, root, concurrency)
+					ds := scan.NewDirTreeScanner(cCtx.Context, root, concurrency)
 					ds.Count()
 					return nil
 				},
@@ -70,7 +70,7 @@ func main() {
 					if err != nil {
 						return err
 					}
-					ds := scan.NewDirScanner(cCtx.Context, root, concurrency)
+					ds := scan.NewDirTreeScanner(cCtx.Context, root, concurrency)
 					ds.List()
 					return nil
 				},
