@@ -1,111 +1,31 @@
 package main
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"log"
 	"os"
-	"path"
 	"runtime"
-	"sync"
 
 	"github.com/urfave/cli/v2"
-	"golang.org/x/sync/semaphore"
+	"github.com/vpal/cdirtreescan/scan"
 )
 
-func cDirTreeScan(root string, concurrency uint64) error {
-	var (
-		poolSize       uint64 = concurrency
-		chSize         uint64 = poolSize * 2
-		rwg            sync.WaitGroup
-		swg            sync.WaitGroup
-		dirs           []string
-		files          []string
-		errs           []error
-		drch                               = make(chan string, chSize)
-		frch                               = make(chan string, chSize)
-		ech                                = make(chan error, chSize)
-		poolSem        *semaphore.Weighted = semaphore.NewWeighted(int64(poolSize))
-		ctx            context.Context     = context.TODO()
-		scanDirTree    func(string)
-		collectResults func()
-	)
+func validate(cCtx *cli.Context) (root string, concurrency uint64, err error) {
+	if cCtx.NArg() != 1 {
+		return root, concurrency, cli.Exit("provide exactly one directory to scan", 1)
+	}
+	root = cCtx.Args().Get(0)
 
-	scanDirTree = func(dir string) {
-		defer swg.Done()
-
-		_ = poolSem.Acquire(ctx, 1)
-		defer poolSem.Release(1)
-
-		drch <- dir
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			ech <- err
-		}
-		for _, entry := range entries {
-			path := path.Join(dir, entry.Name())
-			if entry.IsDir() {
-				swg.Add(1)
-				go scanDirTree(path)
-			} else {
-				frch <- path
-			}
-		}
+	fileInfo, err := os.Stat(root)
+	if err != nil {
+		return root, concurrency, cli.Exit(err, 1)
 	}
 
-	collectResults = func() {
-		defer rwg.Done()
-
-		rwg.Add(1)
-		go func() {
-			defer rwg.Done()
-			for err := range ech {
-				errs = append(errs, err)
-			}
-		}()
-
-		rwg.Add(1)
-		go func() {
-			defer rwg.Done()
-			for dir := range drch {
-				fmt.Printf("d %v\n", dir)
-				dirs = append(dirs, dir)
-			}
-		}()
-
-		rwg.Add(1)
-		go func() {
-			defer rwg.Done()
-			for file := range frch {
-				fmt.Printf("f %v\n", file)
-				files = append(files, file)
-			}
-		}()
+	if !fileInfo.IsDir() {
+		return root, concurrency, cli.Exit("the provided path is not a directory", 1)
 	}
 
-	rwg.Add(1)
-	go collectResults()
-
-	swg.Add(1)
-	go scanDirTree(root)
-
-	// Wait for all scans to be ready
-	swg.Wait()
-	close(drch)
-	close(frch)
-	close(ech)
-
-	// Wait for the collector to be ready
-	rwg.Wait()
-
-	if len(errs) > 0 {
-		return errors.New("one or more errors happened during scanning")
-	}
-	for _, f := range errs {
-		fmt.Println(f)
-	}
-	return nil
+	return root, cCtx.Uint64("concurrency"), err
 }
 
 func main() {
@@ -126,28 +46,35 @@ func main() {
 				},
 			},
 		},
-		Action: func(cCtx *cli.Context) error {
-			var root string
-
-			if cCtx.NArg() > 0 {
-				root = cCtx.Args().Get(0)
-			} else {
-				return cli.Exit("no directory to scan", 1)
-			}
-
-			fileInfo, err := os.Stat(root)
-			if err != nil {
-				return cli.Exit(err, 1)
-			}
-			if !fileInfo.IsDir() {
-				return cli.Exit("the provided path is not a directory", 1)
-			}
-
-			concurrency := cCtx.Uint64("concurrency")
-			if err := cDirTreeScan(root, concurrency); err != nil {
-				return cli.Exit(err, 1)
-			}
-			return nil
+		Commands: []*cli.Command{
+			{
+				Name:    "count",
+				Aliases: []string{"cnt"},
+				Usage:   "Count the number of directories and files",
+				Action: func(cCtx *cli.Context) error {
+					root, concurrency, err := validate(cCtx)
+					if err != nil {
+						return err
+					}
+					ds := scan.NewDirScanner(cCtx.Context, root, concurrency)
+					ds.Count()
+					return nil
+				},
+			},
+			{
+				Name:    "list",
+				Aliases: []string{"ls"},
+				Usage:   "List directories and files",
+				Action: func(cCtx *cli.Context) error {
+					root, concurrency, err := validate(cCtx)
+					if err != nil {
+						return err
+					}
+					ds := scan.NewDirScanner(cCtx.Context, root, concurrency)
+					ds.List()
+					return nil
+				},
+			},
 		},
 	}
 
