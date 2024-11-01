@@ -8,13 +8,6 @@ import (
 	"sync"
 )
 
-type ScanAction int
-
-const (
-	List ScanAction = iota
-	Count
-)
-
 type DirScanner struct {
 	ctx         context.Context
 	root        string
