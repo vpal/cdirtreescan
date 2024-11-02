@@ -2,7 +2,7 @@ package scan
 
 import (
 	"context"
-	"fmt"
+	"io/fs"
 	"os"
 	"path"
 	"sync"
@@ -10,132 +10,81 @@ import (
 
 type DirTreeScanner struct {
 	ctx         context.Context
-	root        string
-	resChSize   uint64
+	root        PathEntry
+	chSize      uint64
 	concurrency uint64
 }
 
-func NewDirTreeScanner(ctx context.Context, root string, concurrency uint64) *DirTreeScanner {
-	return &DirTreeScanner{
-		ctx:         ctx,
-		root:        root,
-		concurrency: concurrency,
-		resChSize:   concurrency * 2,
+type PathEntry struct {
+	Path  string
+	Entry os.DirEntry
+}
+
+func NewDirTreeScanner(ctx context.Context, root string, concurrency uint64) (*DirTreeScanner, error) {
+	fileInfo, err := os.Stat(root)
+	if err != nil {
+		return nil, err
 	}
+	return &DirTreeScanner{
+		ctx: ctx,
+		root: PathEntry{
+			Path:  root,
+			Entry: fs.FileInfoToDirEntry(fileInfo),
+		},
+		concurrency: concurrency,
+		chSize:      concurrency * 1000,
+	}, nil
 }
 
-func (ds *DirTreeScanner) Count() (errs []error) {
+func (dts *DirTreeScanner) Stream() (<-chan PathEntry, <-chan error) {
 	var (
-		wg        sync.WaitGroup
-		dirCh     = make(chan string, ds.resChSize)
-		fileCh    = make(chan string, ds.resChSize)
-		errCh     = make(chan error, ds.resChSize)
-		dirCount  int64
-		fileCount int64
+		entryCh = make(chan PathEntry, dts.chSize)
+		errCh   = make(chan error, dts.chSize)
 	)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for err := range errCh {
-			errs = append(errs, err)
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for range dirCh {
-			dirCount++
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for range fileCh {
-			fileCount++
-		}
-	}()
-
-	ds.scanDirTree(dirCh, fileCh, errCh)
-
-	wg.Wait()
-	fmt.Printf("Number of directories: %v\n", dirCount)
-	fmt.Printf("Number of files: %v\n", fileCount)
-	return errs
+	go dts.scanDirTree(entryCh, errCh)
+	return entryCh, errCh
 }
 
-func (ds *DirTreeScanner) List() (errs []error) {
-	var (
-		wg     sync.WaitGroup
-		dirCh  = make(chan string, ds.resChSize)
-		fileCh = make(chan string, ds.resChSize)
-		errCh  = make(chan error, ds.resChSize)
-	)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for err := range errCh {
-			errs = append(errs, err)
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for dir := range dirCh {
-			fmt.Printf("d %v\n", dir)
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for file := range fileCh {
-			fmt.Printf("f %v\n", file)
-		}
-	}()
-
-	ds.scanDirTree(dirCh, fileCh, errCh)
-
-	wg.Wait()
-	return errs
+func (dts *DirTreeScanner) ChSize() int64 {
+	return int64(dts.chSize)
 }
 
-func (ds *DirTreeScanner) scanDirTree(dirCh chan<- string, fileCh chan<- string, errCh chan<- error) {
+func (dts *DirTreeScanner) scanDirTree(entryCh chan<- PathEntry, errCh chan<- error) {
 	wg := sync.WaitGroup{}
-	semCh := make(chan int, ds.concurrency)
+	semCh := make(chan int, dts.concurrency)
 
-	var scanDir func(string)
-	scanDir = func(dir string) {
+	var scanDir func(PathEntry)
+	scanDir = func(dir PathEntry) {
 		defer wg.Done()
-
 		semCh <- 1
-		defer func() {
-			<-semCh
-		}()
+		defer func() { <-semCh }()
 
-		dirCh <- dir
-		entries, err := os.ReadDir(dir)
+		entryCh <- dir
+		entries, err := os.ReadDir(dir.Path)
 		if err != nil {
 			errCh <- err
 		}
 		for _, entry := range entries {
-			path := path.Join(dir, entry.Name())
+			path := path.Join(dir.Path, entry.Name())
 			if entry.IsDir() {
 				wg.Add(1)
-				go scanDir(path)
+				go scanDir(PathEntry{
+					Path:  path,
+					Entry: entry,
+				})
 			} else {
-				fileCh <- path
+				entryCh <- PathEntry{
+					Path:  path,
+					Entry: entry,
+				}
 			}
 		}
 	}
 
 	wg.Add(1)
-	scanDir(ds.root)
+	scanDir(dts.root)
 
 	wg.Wait()
-	close(dirCh)
-	close(fileCh)
+	close(entryCh)
 	close(errCh)
 }

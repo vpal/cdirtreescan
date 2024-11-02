@@ -7,10 +7,11 @@ import (
 	"runtime"
 
 	"github.com/urfave/cli/v2"
+	"github.com/vpal/cdirtreescan/output"
 	"github.com/vpal/cdirtreescan/scan"
 )
 
-func validate(cCtx *cli.Context) (root string, concurrency uint64, err error) {
+func parseArgs(cCtx *cli.Context) (root string, concurrency uint64, err error) {
 	if cCtx.NArg() != 1 {
 		return root, concurrency, cli.Exit("provide exactly one directory to scan", 1)
 	}
@@ -52,12 +53,17 @@ func main() {
 				Aliases: []string{"cnt"},
 				Usage:   "Count the number of directories and files",
 				Action: func(cCtx *cli.Context) error {
-					root, concurrency, err := validate(cCtx)
+					root, concurrency, err := parseArgs(cCtx)
 					if err != nil {
 						return err
 					}
-					ds := scan.NewDirTreeScanner(cCtx.Context, root, concurrency)
-					ds.Count()
+
+					dts, err := scan.NewDirTreeScanner(cCtx.Context, root, concurrency)
+					if err != nil {
+						return err
+					}
+					dtp := output.NewDirTreePrinter(dts, os.Stdout, os.Stderr)
+					dtp.PrintCount()
 					return nil
 				},
 			},
@@ -66,12 +72,18 @@ func main() {
 				Aliases: []string{"ls"},
 				Usage:   "List directories and files",
 				Action: func(cCtx *cli.Context) error {
-					root, concurrency, err := validate(cCtx)
+					root, concurrency, err := parseArgs(cCtx)
 					if err != nil {
 						return err
 					}
-					ds := scan.NewDirTreeScanner(cCtx.Context, root, concurrency)
-					ds.List()
+
+					dts, err := scan.NewDirTreeScanner(cCtx.Context, root, concurrency)
+					if err != nil {
+						return err
+					}
+					dtp := output.NewDirTreePrinter(dts, os.Stdout, os.Stderr)
+					dtp.PrintList()
+
 					return nil
 				},
 			},
