@@ -60,7 +60,11 @@ func (dts *DirTreeScanner) scanDirTree(entryCh chan<- PathEntry, errCh chan<- er
 		defer func() { <-semCh }()
 
 		entryCh <- dir
-		entries, err := os.ReadDir(dir.Path)
+		file, err := os.Open(dir.Path)
+		if err != nil {
+			errCh <- err
+		}
+		entries, err := file.ReadDir(0)
 		if err != nil {
 			errCh <- err
 		}
