@@ -41,12 +41,14 @@ func (dtp *DirTreePrinter) PrintCount() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for entry := range entryCh {
-			switch {
-			case entry.Entry.IsDir():
-				dirCount++
-			default:
-				fileCount++
+		for entries := range entryCh {
+			for _, entry := range entries {
+				switch {
+				case entry.Entry.IsDir():
+					dirCount++
+				default:
+					fileCount++
+				}
 			}
 		}
 	}()
@@ -75,10 +77,12 @@ func (dtp *DirTreePrinter) PrintList() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for entry := range entryCh {
-			mode := entry.Entry.Type().String()
-			mode = mode[:len(mode)-9]
-			fmt.Fprintf(dtp.writer, "%v %v\n", mode, entry.Path)
+		for entries := range entryCh {
+			for _, entry := range entries {
+				mode := entry.Entry.Type().String()
+				mode = mode[:len(mode)-9]
+				fmt.Fprintf(dtp.writer, "%v %v\n", mode, entry.Path)
+			}
 		}
 	}()
 
