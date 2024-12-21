@@ -89,7 +89,7 @@ func (dtp *DirTreePrinter) PrintList() {
 		defer wg.Done()
 		for entries := range entryCh {
 			for _, entry := range entries {
-				fti := string(filetype.GetFileTypeChar(filetype.GetFileType(entry)))
+				fti := string(filetype.GetFileTypeIndicator(filetype.GetFileType(entry)))
 				fmt.Fprintf(dtp.writer, "%v %v\n", fti, entry.Path)
 			}
 		}

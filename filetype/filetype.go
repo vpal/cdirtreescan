@@ -19,17 +19,17 @@ const (
 	FileTypeOther
 )
 
-type FileTypeChar byte
+type FileTypeIndicator byte
 
 const (
-	FileTypeCharRegular     FileTypeChar = '-'
-	FileTypeCharBlockDevice FileTypeChar = 'b'
-	FileTypeCharCharDevice  FileTypeChar = 'c'
-	FileTypeCharDirectory   FileTypeChar = 'd'
-	FileTypeCharSymlink     FileTypeChar = 'l'
-	FileTypeCharSocket      FileTypeChar = 'M'
-	FileTypeCharNamedPipe   FileTypeChar = 'P'
-	FileTypeCharOther       FileTypeChar = '?'
+	FileTypeIndicatorRegular     FileTypeIndicator = '-'
+	FileTypeIndicatorBlockDevice FileTypeIndicator = 'b'
+	FileTypeIndicatorCharDevice  FileTypeIndicator = 'c'
+	FileTypeIndicatorDirectory   FileTypeIndicator = 'd'
+	FileTypeIndicatorSymlink     FileTypeIndicator = 'l'
+	FileTypeIndicatorSocket      FileTypeIndicator = 'M'
+	FileTypeIndicatorNamedPipe   FileTypeIndicator = 'P'
+	FileTypeIndicatorOther       FileTypeIndicator = '?'
 )
 
 const (
@@ -54,15 +54,15 @@ const (
 	FileTypeDescriptionPluralOther       string = "Other"
 )
 
-var fileTypeIndicators = []FileTypeChar{
-	FileTypeRegular:     FileTypeCharRegular,
-	FileTypeBlockDevice: FileTypeCharBlockDevice,
-	FileTypeCharDevice:  FileTypeCharCharDevice,
-	FileTypeDirectory:   FileTypeCharDirectory,
-	FileTypeSymlink:     FileTypeCharSymlink,
-	FileTypeSocket:      FileTypeCharSocket,
-	FileTypeNamedPipe:   FileTypeCharNamedPipe,
-	FileTypeOther:       FileTypeCharOther,
+var fileTypeIndicators = []FileTypeIndicator{
+	FileTypeRegular:     FileTypeIndicatorRegular,
+	FileTypeBlockDevice: FileTypeIndicatorBlockDevice,
+	FileTypeCharDevice:  FileTypeIndicatorCharDevice,
+	FileTypeDirectory:   FileTypeIndicatorDirectory,
+	FileTypeSymlink:     FileTypeIndicatorSymlink,
+	FileTypeSocket:      FileTypeIndicatorSocket,
+	FileTypeNamedPipe:   FileTypeIndicatorNamedPipe,
+	FileTypeOther:       FileTypeIndicatorOther,
 }
 
 var fileTypeDescriptionsSingular = []string{
@@ -109,7 +109,7 @@ func GetFileType(pathEntry scan.PathEntry) FileType {
 	}
 }
 
-func GetFileTypeChar(fileType FileType) FileTypeChar {
+func GetFileTypeIndicator(fileType FileType) FileTypeIndicator {
 	return fileTypeIndicators[fileType]
 }
 
