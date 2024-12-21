@@ -75,6 +75,8 @@ func (dts *DirTreeScanner) scanDirTree(entryCh chan<- []PathEntry, errCh chan<- 
 		file, err := os.Open(dir.Path)
 		if err != nil {
 			errCh <- err
+			return
+			// errCh <- errors.New("Error: " + err.Error() + " " + "Open" + " " + dir.Path)
 		}
 		defer file.Close()
 
@@ -85,6 +87,7 @@ func (dts *DirTreeScanner) scanDirTree(entryCh chan<- []PathEntry, errCh chan<- 
 				break Loop
 			} else if err != nil {
 				errCh <- err
+				return
 			}
 
 			for _, entry := range entries {
