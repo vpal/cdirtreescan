@@ -9,19 +9,23 @@ import (
 	"github.com/vpal/cdirtreescan/scan"
 )
 
-func NewDirTreePrinter(dts *scan.DirTreeScanner, writer io.Writer, errWriter io.Writer) *DirTreePrinter {
+func NewDirTreePrinter(dts *scan.DirTreeScanner, writer io.Writer, errWriter io.Writer, displayErrors bool) *DirTreePrinter {
 	return &DirTreePrinter{
-		dts:    dts,
-		writer: writer,
+		dts:           dts,
+		writer:        writer,
+		errWriter:     errWriter,
+		displayErrors: displayErrors,
 	}
 }
 
 type DirTreePrinter struct {
-	dts    *scan.DirTreeScanner
-	writer io.Writer
+	dts           *scan.DirTreeScanner
+	writer        io.Writer
+	errWriter     io.Writer
+	displayErrors bool
 }
 
-func (dtp *DirTreePrinter) PrintCount() {
+func (dtp *DirTreePrinter) PrintCount() error {
 	var (
 		wg    sync.WaitGroup
 		errs  []error
@@ -44,6 +48,9 @@ func (dtp *DirTreePrinter) PrintCount() {
 		defer wg.Done()
 		for err := range errCh {
 			errs = append(errs, err)
+			if dtp.displayErrors {
+				fmt.Fprintln(dtp.errWriter, err)
+			}
 		}
 	}()
 
@@ -66,9 +73,14 @@ func (dtp *DirTreePrinter) PrintCount() {
 			fmt.Fprintf(dtp.writer, "%v: %v\n", ftd, c)
 		}
 	}
+
+	if len(errs) != 0 {
+		return fmt.Errorf("%v error(s) happened during scanning", len(errs))
+	}
+	return nil
 }
 
-func (dtp *DirTreePrinter) PrintList() {
+func (dtp *DirTreePrinter) PrintList() error {
 	var (
 		wg   sync.WaitGroup
 		errs []error
@@ -81,6 +93,9 @@ func (dtp *DirTreePrinter) PrintList() {
 		defer wg.Done()
 		for err := range errCh {
 			errs = append(errs, err)
+			if dtp.displayErrors {
+				fmt.Fprintln(dtp.errWriter, err)
+			}
 		}
 	}()
 
@@ -96,4 +111,9 @@ func (dtp *DirTreePrinter) PrintList() {
 	}()
 
 	wg.Wait()
+
+	if len(errs) != 0 {
+		return fmt.Errorf("%v error(s) happened during scanning", len(errs))
+	}
+	return nil
 }
