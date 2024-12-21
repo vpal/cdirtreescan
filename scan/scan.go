@@ -76,7 +76,6 @@ func (dts *DirTreeScanner) scanDirTree(entryCh chan<- []PathEntry, errCh chan<- 
 		if err != nil {
 			errCh <- err
 			return
-			// errCh <- errors.New("Error: " + err.Error() + " " + "Open" + " " + dir.Path)
 		}
 		defer file.Close()
 
