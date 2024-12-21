@@ -36,7 +36,7 @@ func main() {
 		Flags: []cli.Flag{
 			&cli.Uint64Flag{
 				Name:    "concurrency",
-				Value:   uint64(runtime.NumCPU() * 2),
+				Value:   uint64(runtime.NumCPU()),
 				Aliases: []string{"c"},
 				Usage:   "upper limit of the number of concurrent scans",
 				Action: func(ctx *cli.Context, v uint64) error {
