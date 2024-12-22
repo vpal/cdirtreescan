@@ -17,7 +17,7 @@ func validateArgs(cCtx *cli.Context) error {
 		return cli.Exit("provide exactly one directory to scan", 1)
 	}
 
-	root := cCtx.Args().Get(0)
+	root := filepath.Clean(cCtx.Args().Get(0))
 	fileInfo, err := os.Stat(root)
 	if err != nil {
 		return cli.Exit(err, 1)
@@ -26,7 +26,7 @@ func validateArgs(cCtx *cli.Context) error {
 	if !fileInfo.IsDir() {
 		return cli.Exit("the provided path is not a directory", 1)
 	}
-
+	cCtx.App.Metadata["root"] = root
 	return nil
 }
 
@@ -61,7 +61,7 @@ func main() {
 				Usage:   "Count the number of directories and files",
 				Before:  validateArgs,
 				Action: func(cCtx *cli.Context) error {
-					root := filepath.Clean(cCtx.Args().Get(0))
+					root := cCtx.App.Metadata["root"].(string)
 					concurrency := cCtx.Uint64("concurrency")
 					displayErrors := !cCtx.Bool("suppress-errors")
 
@@ -84,7 +84,7 @@ func main() {
 				Usage:   "List directories and files",
 				Before:  validateArgs,
 				Action: func(cCtx *cli.Context) error {
-					root := filepath.Clean(cCtx.Args().Get(0))
+					root := cCtx.App.Metadata["root"].(string)
 					concurrency := cCtx.Uint64("concurrency")
 					displayErrors := !cCtx.Bool("suppress-errors")
 
