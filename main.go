@@ -63,14 +63,18 @@ func main() {
 					root := cCtx.Args().Get(0)
 					concurrency := cCtx.Uint64("concurrency")
 					displayErrors := !cCtx.Bool("suppress-errors")
-					fmt.Println(displayErrors)
 
 					dts, err := scan.NewDirTreeScanner(cCtx.Context, root, concurrency)
 					if err != nil {
 						return err
 					}
+
 					dtp := output.NewDirTreePrinter(dts, os.Stdout, os.Stderr, displayErrors)
-					return dtp.PrintCount()
+					err = dtp.PrintCount()
+					if displayErrors {
+						return err
+					}
+					return cli.Exit("", 1)
 				},
 			},
 			{
@@ -82,14 +86,18 @@ func main() {
 					root := cCtx.Args().Get(0)
 					concurrency := cCtx.Uint64("concurrency")
 					displayErrors := !cCtx.Bool("suppress-errors")
-					fmt.Println(displayErrors)
 
 					dts, err := scan.NewDirTreeScanner(cCtx.Context, root, concurrency)
 					if err != nil {
 						return err
 					}
+
 					dtp := output.NewDirTreePrinter(dts, os.Stdout, os.Stderr, displayErrors)
-					return dtp.PrintList()
+					err = dtp.PrintList()
+					if displayErrors {
+						return err
+					}
+					return cli.Exit("", 1)
 				},
 			},
 		},
