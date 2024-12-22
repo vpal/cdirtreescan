@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 
 	"github.com/urfave/cli/v2"
@@ -60,7 +61,7 @@ func main() {
 				Usage:   "Count the number of directories and files",
 				Before:  validateArgs,
 				Action: func(cCtx *cli.Context) error {
-					root := cCtx.Args().Get(0)
+					root := filepath.Clean(cCtx.Args().Get(0))
 					concurrency := cCtx.Uint64("concurrency")
 					displayErrors := !cCtx.Bool("suppress-errors")
 
@@ -83,7 +84,7 @@ func main() {
 				Usage:   "List directories and files",
 				Before:  validateArgs,
 				Action: func(cCtx *cli.Context) error {
-					root := cCtx.Args().Get(0)
+					root := filepath.Clean(cCtx.Args().Get(0))
 					concurrency := cCtx.Uint64("concurrency")
 					displayErrors := !cCtx.Bool("suppress-errors")
 
