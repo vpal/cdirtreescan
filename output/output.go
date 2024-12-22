@@ -27,9 +27,9 @@ type DirTreePrinter struct {
 
 func (dtp *DirTreePrinter) PrintCount() error {
 	var (
-		wg    sync.WaitGroup
-		errs  []error
-		ftCnt = []uint64{
+		wg     sync.WaitGroup
+		errCnt uint64
+		ftCnt  = []uint64{
 			filetype.FileTypeRegular:     0,
 			filetype.FileTypeBlockDevice: 0,
 			filetype.FileTypeCharDevice:  0,
@@ -47,7 +47,7 @@ func (dtp *DirTreePrinter) PrintCount() error {
 	go func() {
 		defer wg.Done()
 		for err := range errCh {
-			errs = append(errs, err)
+			errCnt++
 			if dtp.displayErrors {
 				fmt.Fprintln(dtp.errWriter, err)
 			}
@@ -74,16 +74,16 @@ func (dtp *DirTreePrinter) PrintCount() error {
 		}
 	}
 
-	if len(errs) != 0 {
-		return fmt.Errorf("%v error(s) happened during scanning", len(errs))
+	if errCnt != 0 {
+		return fmt.Errorf("%v error(s) happened during scanning", errCnt)
 	}
 	return nil
 }
 
 func (dtp *DirTreePrinter) PrintList() error {
 	var (
-		wg   sync.WaitGroup
-		errs []error
+		wg     sync.WaitGroup
+		errCnt uint64
 	)
 
 	entryCh, errCh := dtp.dts.Stream()
@@ -92,7 +92,7 @@ func (dtp *DirTreePrinter) PrintList() error {
 	go func() {
 		defer wg.Done()
 		for err := range errCh {
-			errs = append(errs, err)
+			errCnt++
 			if dtp.displayErrors {
 				fmt.Fprintln(dtp.errWriter, err)
 			}
@@ -112,8 +112,8 @@ func (dtp *DirTreePrinter) PrintList() error {
 
 	wg.Wait()
 
-	if len(errs) != 0 {
-		return fmt.Errorf("%v error(s) happened during scanning", len(errs))
+	if errCnt != 0 {
+		return fmt.Errorf("%v error(s) happened during scanning", errCnt)
 	}
 	return nil
 }
