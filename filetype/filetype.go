@@ -32,28 +32,6 @@ const (
 	FileTypeIndicatorOther       FileTypeIndicator = '?'
 )
 
-const (
-	FileTypeDescriptionSingularRegular     string = "Regular file"
-	FileTypeDescriptionSingularBlockDevice string = "Block device"
-	FileTypeDescriptionSingularCharDevice  string = "Character device"
-	FileTypeDescriptionSingularDirectory   string = "Directory"
-	FileTypeDescriptionSingularSymlink     string = "Symbolic link"
-	FileTypeDescriptionSingularSocket      string = "Socket"
-	FileTypeDescriptionSingularNamedPipe   string = "FIFO (named pipe) file"
-	FileTypeDescriptionSingularOther       string = "Other"
-)
-
-const (
-	FileTypeDescriptionPluralRegular     string = "Regular files"
-	FileTypeDescriptionPluralBlockDevice string = "Block devices"
-	FileTypeDescriptionPluralCharDevice  string = "Character device file"
-	FileTypeDescriptionPluralDirectory   string = "Directories"
-	FileTypeDescriptionPluralSymlink     string = "Symbolic links"
-	FileTypeDescriptionPluralSocket      string = "Sockets"
-	FileTypeDescriptionPluralNamedPipe   string = "FIFOs (named pipe)"
-	FileTypeDescriptionPluralOther       string = "Other"
-)
-
 var fileTypeIndicators = []FileTypeIndicator{
 	FileTypeRegular:     FileTypeIndicatorRegular,
 	FileTypeBlockDevice: FileTypeIndicatorBlockDevice,
@@ -65,6 +43,17 @@ var fileTypeIndicators = []FileTypeIndicator{
 	FileTypeOther:       FileTypeIndicatorOther,
 }
 
+const (
+	FileTypeDescriptionSingularRegular     string = "Regular file"
+	FileTypeDescriptionSingularBlockDevice string = "Block device"
+	FileTypeDescriptionSingularCharDevice  string = "Character device"
+	FileTypeDescriptionSingularDirectory   string = "Directory"
+	FileTypeDescriptionSingularSymlink     string = "Symbolic link"
+	FileTypeDescriptionSingularSocket      string = "Socket"
+	FileTypeDescriptionSingularNamedPipe   string = "FIFO (named pipe)"
+	FileTypeDescriptionSingularOther       string = "Other"
+)
+
 var fileTypeDescriptionsSingular = []string{
 	FileTypeRegular:     FileTypeDescriptionSingularRegular,
 	FileTypeBlockDevice: FileTypeDescriptionSingularBlockDevice,
@@ -75,6 +64,17 @@ var fileTypeDescriptionsSingular = []string{
 	FileTypeNamedPipe:   FileTypeDescriptionSingularNamedPipe,
 	FileTypeOther:       FileTypeDescriptionSingularOther,
 }
+
+const (
+	FileTypeDescriptionPluralRegular     string = "Regular files"
+	FileTypeDescriptionPluralBlockDevice string = "Block devices"
+	FileTypeDescriptionPluralCharDevice  string = "Character devices"
+	FileTypeDescriptionPluralDirectory   string = "Directories"
+	FileTypeDescriptionPluralSymlink     string = "Symbolic links"
+	FileTypeDescriptionPluralSocket      string = "Sockets"
+	FileTypeDescriptionPluralNamedPipe   string = "FIFOs (named pipe)"
+	FileTypeDescriptionPluralOther       string = "Other"
+)
 
 var fileTypeDescriptionsPlural = []string{
 	FileTypeRegular:     FileTypeDescriptionPluralRegular,
