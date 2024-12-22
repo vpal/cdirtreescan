@@ -1,4 +1,4 @@
-package filetype
+package filetypes
 
 import (
 	"io/fs"

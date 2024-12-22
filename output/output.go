@@ -5,7 +5,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/vpal/cdirtreescan/filetype"
+	"github.com/vpal/cdirtreescan/filetypes"
 	"github.com/vpal/cdirtreescan/scan"
 )
 
@@ -30,14 +30,14 @@ func (dtp *DirTreePrinter) PrintCount() error {
 		wg     sync.WaitGroup
 		errCnt uint64
 		ftCnt  = []uint64{
-			filetype.FileTypeRegular:     0,
-			filetype.FileTypeBlockDevice: 0,
-			filetype.FileTypeCharDevice:  0,
-			filetype.FileTypeDirectory:   0,
-			filetype.FileTypeSymlink:     0,
-			filetype.FileTypeSocket:      0,
-			filetype.FileTypeNamedPipe:   0,
-			filetype.FileTypeOther:       0,
+			filetypes.FileTypeRegular:     0,
+			filetypes.FileTypeBlockDevice: 0,
+			filetypes.FileTypeCharDevice:  0,
+			filetypes.FileTypeDirectory:   0,
+			filetypes.FileTypeSymlink:     0,
+			filetypes.FileTypeSocket:      0,
+			filetypes.FileTypeNamedPipe:   0,
+			filetypes.FileTypeOther:       0,
 		}
 	)
 
@@ -59,7 +59,7 @@ func (dtp *DirTreePrinter) PrintCount() error {
 		defer wg.Done()
 		for entries := range entryCh {
 			for _, entry := range entries {
-				ftCnt[filetype.GetFileType(entry)]++
+				ftCnt[filetypes.GetFileType(entry)]++
 			}
 		}
 	}()
@@ -68,8 +68,8 @@ func (dtp *DirTreePrinter) PrintCount() error {
 
 	for t, c := range ftCnt {
 		if c != 0 {
-			ft := filetype.FileType(t)
-			ftd := filetype.GetFileTypeDescriptionPlural(ft)
+			ft := filetypes.FileType(t)
+			ftd := filetypes.GetFileTypeDescriptionPlural(ft)
 			fmt.Fprintf(dtp.writer, "%v: %v\n", ftd, c)
 		}
 	}
@@ -104,7 +104,7 @@ func (dtp *DirTreePrinter) PrintList() error {
 		defer wg.Done()
 		for entries := range entryCh {
 			for _, entry := range entries {
-				fti := string(filetype.GetFileTypeIndicator(filetype.GetFileType(entry)))
+				fti := string(filetypes.GetFileTypeIndicator(filetypes.GetFileType(entry)))
 				fmt.Fprintf(dtp.writer, "%v %v\n", fti, entry.Path)
 			}
 		}
