@@ -25,20 +25,37 @@ type DirTreePrinter struct {
 	displayErrors bool
 }
 
+type fileTypeCounter struct {
+	counts []uint64
+}
+
+func (ftc *fileTypeCounter) Inc(ft filetypes.FileType) {
+	ftc.counts[ft]++
+}
+
+func (ftc *fileTypeCounter) Get(ft filetypes.FileType) uint64 {
+	return ftc.counts[ft]
+}
+
+func (ftc *fileTypeCounter) Total() uint64 {
+	var total uint64
+	for _, cnt := range ftc.counts {
+		total += cnt
+	}
+	return total
+}
+
+func newFileTypeCounter() *fileTypeCounter {
+	return &fileTypeCounter{
+		counts: make([]uint64, len(filetypes.FileTypes)),
+	}
+}
+
 func (dtp *DirTreePrinter) PrintCount() error {
 	var (
 		wg     sync.WaitGroup
 		errCnt uint64
-		ftCnt  = []uint64{
-			filetypes.FileTypeRegular:     0,
-			filetypes.FileTypeBlockDevice: 0,
-			filetypes.FileTypeCharDevice:  0,
-			filetypes.FileTypeDirectory:   0,
-			filetypes.FileTypeSymlink:     0,
-			filetypes.FileTypeSocket:      0,
-			filetypes.FileTypeNamedPipe:   0,
-			filetypes.FileTypeOther:       0,
-		}
+		ftCnt  = newFileTypeCounter()
 	)
 
 	entryCh, errCh := dtp.dts.Stream()
@@ -59,18 +76,19 @@ func (dtp *DirTreePrinter) PrintCount() error {
 		defer wg.Done()
 		for entries := range entryCh {
 			for _, entry := range entries {
-				ftCnt[filetypes.GetFileType(entry)]++
+				ftCnt.Inc(filetypes.GetFileType(entry))
 			}
 		}
 	}()
 
 	wg.Wait()
 
-	for t, c := range ftCnt {
-		if c != 0 {
-			ft := filetypes.FileType(t)
-			ftd := filetypes.GetFileTypeDescriptionPlural(ft)
-			fmt.Fprintf(dtp.writer, "%v: %v\n", ftd, c)
+	fmt.Fprintf(dtp.writer, "Total: %v\n", ftCnt.Total())
+	for _, ft := range filetypes.FileTypes {
+		cnt := ftCnt.Get(ft)
+		if cnt != 0 {
+			ftDesc := filetypes.GetFileTypeDescriptionPlural(ft)
+			fmt.Fprintf(dtp.writer, "%v: %v\n", ftDesc, cnt)
 		}
 	}
 
