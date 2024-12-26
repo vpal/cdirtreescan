@@ -19,6 +19,17 @@ const (
 	FileTypeOther
 )
 
+var FileTypes = []FileType{
+	FileTypeRegular,
+	FileTypeBlockDevice,
+	FileTypeCharDevice,
+	FileTypeDirectory,
+	FileTypeSymlink,
+	FileTypeSocket,
+	FileTypeNamedPipe,
+	FileTypeOther,
+}
+
 type FileTypeIndicator byte
 
 const (
