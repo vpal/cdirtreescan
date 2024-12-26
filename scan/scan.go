@@ -13,8 +13,8 @@ import (
 type DirTreeScanner struct {
 	ctx         context.Context
 	root        PathEntry
-	chSize      uint64
-	concurrency uint64
+	chSize      int
+	concurrency int
 }
 
 type PathEntry struct {
@@ -22,7 +22,7 @@ type PathEntry struct {
 	Entry os.DirEntry
 }
 
-func NewDirTreeScanner(ctx context.Context, root string, concurrency uint64) (*DirTreeScanner, error) {
+func NewDirTreeScanner(ctx context.Context, root string, concurrency int) (*DirTreeScanner, error) {
 	fileInfo, err := os.Stat(root)
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func NewDirTreeScanner(ctx context.Context, root string, concurrency uint64) (*D
 			Entry: fs.FileInfoToDirEntry(fileInfo),
 		},
 		concurrency: concurrency,
-		chSize:      concurrency * 1000,
+		chSize:      concurrency * 2,
 	}, nil
 }
 
@@ -47,8 +47,9 @@ func (dts *DirTreeScanner) Stream() (<-chan []PathEntry, <-chan error) {
 	return entryCh, errCh
 }
 
-func (dts *DirTreeScanner) ChSize() int64 {
-	return int64(dts.chSize)
+func (dts *DirTreeScanner) ChSize() int {
+	return dts.chSize
+}
 }
 
 func (dts *DirTreeScanner) scanDirTree(entryCh chan<- []PathEntry, errCh chan<- error) {

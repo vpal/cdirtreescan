@@ -35,12 +35,12 @@ func main() {
 		Name:  "cdirtreescan",
 		Usage: "Scan all entries within a directory",
 		Flags: []cli.Flag{
-			&cli.Uint64Flag{
+			&cli.IntFlag{
 				Name:    "concurrency",
-				Value:   uint64(runtime.NumCPU()),
+				Value:   runtime.NumCPU(),
 				Aliases: []string{"c"},
 				Usage:   "Upper limit of the number of concurrent scans",
-				Action: func(ctx *cli.Context, v uint64) error {
+				Action: func(ctx *cli.Context, v int) error {
 					if v < 1 {
 						return fmt.Errorf("concurrency value %v is not greater than or equal to 1", v)
 					}
@@ -62,7 +62,7 @@ func main() {
 				Before:  validateArgs,
 				Action: func(cCtx *cli.Context) error {
 					root := cCtx.App.Metadata["root"].(string)
-					concurrency := cCtx.Uint64("concurrency")
+					concurrency := cCtx.Int("concurrency")
 					displayErrors := !cCtx.Bool("suppress-errors")
 
 					dts, err := scan.NewDirTreeScanner(cCtx.Context, root, concurrency)
@@ -85,7 +85,7 @@ func main() {
 				Before:  validateArgs,
 				Action: func(cCtx *cli.Context) error {
 					root := cCtx.App.Metadata["root"].(string)
-					concurrency := cCtx.Uint64("concurrency")
+					concurrency := cCtx.Int("concurrency")
 					displayErrors := !cCtx.Bool("suppress-errors")
 
 					dts, err := scan.NewDirTreeScanner(cCtx.Context, root, concurrency)
