@@ -54,7 +54,7 @@ func (dts *DirTreeScanner) ChSize() int64 {
 func (dts *DirTreeScanner) scanDirTree(entryCh chan<- []PathEntry, errCh chan<- error) {
 	wg := sync.WaitGroup{}
 	semCh := make(chan int, dts.concurrency)
-	batchSize := 256
+	batchSize := 1024
 
 	var scanDir func(PathEntry)
 	scanDir = func(dir PathEntry) {
