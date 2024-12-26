@@ -50,7 +50,6 @@ func (dts *DirTreeScanner) Stream() (<-chan []PathEntry, <-chan error) {
 func (dts *DirTreeScanner) ChSize() int {
 	return dts.chSize
 }
-}
 
 func (dts *DirTreeScanner) scanDirTree(entryCh chan<- []PathEntry, errCh chan<- error) {
 	wg := sync.WaitGroup{}
