@@ -52,32 +52,67 @@ func (dts *DirTreeScanner) ChSize() int {
 	return dts.chSize
 }
 
-type TaskChannel struct {
-	ch   chan PathEntry
-	once sync.Once
+type workerSync struct {
+	inCh    chan PathEntry
+	outCh   chan PathEntry
+	buffer  []PathEntry
+	taskCnt atomic.Int32
 }
 
-func (tc *TaskChannel) Close() {
-	tc.once.Do(func() {
-		close(tc.ch)
-	})
+func (ws *workerSync) incTaskCnt() {
+	ws.taskCnt.Add(1)
+}
+
+func (ws *workerSync) decTaskCnt() {
+	ws.taskCnt.Add(-1)
+}
+
+func (ws *workerSync) getTaskCnt() int32 {
+	return ws.taskCnt.Load()
 }
 
 func (dts *DirTreeScanner) scanDirTree(entryCh chan<- []PathEntry, errCh chan<- error) {
 	wg := sync.WaitGroup{}
-	taskCh := &TaskChannel{
-		ch:   make(chan PathEntry, dts.concurrency*100),
-		once: sync.Once{},
+	ws := &workerSync{
+		inCh:   make(chan PathEntry, dts.concurrency*2),
+		outCh:  make(chan PathEntry, dts.concurrency*2),
+		buffer: make([]PathEntry, 0, dts.concurrency*2),
 	}
-	taskCnt := atomic.Int32{}
 	batchSize := 1024
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case entry, ok := <-ws.outCh:
+				if !ok {
+					close(ws.inCh)
+					return
+				}
+				ws.buffer = append(ws.buffer, entry)
+			default:
+				break
+			}
+
+			if len(ws.buffer) > 0 {
+				select {
+				case ws.inCh <- ws.buffer[0]:
+					ws.buffer = ws.buffer[1:]
+				default:
+					break
+				}
+			}
+		}
+	}()
 
 	for i := 0; i < dts.concurrency; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-		WLoop:
-			for dir := range taskCh.ch {
+
+		WorkerLoop:
+			for dir := range ws.inCh {
 				entryCh <- []PathEntry{
 					{
 						Path:  dir.Path,
@@ -89,26 +124,26 @@ func (dts *DirTreeScanner) scanDirTree(entryCh chan<- []PathEntry, errCh chan<- 
 				if err != nil {
 					errCh <- err
 					file.Close()
-					continue WLoop
+					continue WorkerLoop
 				}
 
-			ELoop:
+			EntryLoop:
 				for {
 					entries, err := file.ReadDir(batchSize)
 					if errors.Is(err, io.EOF) {
-						break ELoop
+						break EntryLoop
 					} else if err != nil {
 						errCh <- err
 						file.Close()
-						continue WLoop
+						continue WorkerLoop
 					}
 
-					fileEntries := make([]PathEntry, 0, batchSize)
+					fileEntries := make([]PathEntry, 0, len(entries))
 					for _, entry := range entries {
 						path := path.Join(dir.Path, entry.Name())
 						if entry.IsDir() {
-							taskCnt.Add(1)
-							taskCh.ch <- PathEntry{
+							ws.incTaskCnt()
+							ws.outCh <- PathEntry{
 								Path:  path,
 								Entry: entry,
 							}
@@ -122,16 +157,16 @@ func (dts *DirTreeScanner) scanDirTree(entryCh chan<- []PathEntry, errCh chan<- 
 					entryCh <- fileEntries
 				}
 				file.Close()
-				taskCnt.Add(-1)
-				if taskCnt.Load() == 0 {
-					taskCh.Close()
+				ws.decTaskCnt()
+				if ws.getTaskCnt() == 0 {
+					close(ws.outCh)
 				}
 			}
 		}()
 	}
 
-	taskCnt.Add(1)
-	taskCh.ch <- dts.root
+	ws.incTaskCnt()
+	ws.inCh <- dts.root
 
 	wg.Wait()
 	close(entryCh)
