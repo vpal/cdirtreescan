@@ -9,6 +9,8 @@ import (
 	"path"
 	"sync"
 	"sync/atomic"
+
+	"github.com/vpal/cdirtreescan/dcbuffer"
 )
 
 type DirTreeScanner struct {
@@ -55,7 +57,7 @@ func (dts *DirTreeScanner) ChSize() int {
 type workerSync struct {
 	inCh    chan PathEntry
 	outCh   chan PathEntry
-	buffer  []PathEntry
+	buffer  *dcbuffer.DynamicCircularBuffer[PathEntry]
 	taskCnt atomic.Int32
 }
 
@@ -76,7 +78,7 @@ func (dts *DirTreeScanner) scanDirTree(entryCh chan<- []PathEntry, errCh chan<- 
 	ws := &workerSync{
 		inCh:   make(chan PathEntry, dts.concurrency*2),
 		outCh:  make(chan PathEntry, dts.concurrency*2),
-		buffer: make([]PathEntry, 0, dts.concurrency*2),
+		buffer: dcbuffer.NewDynamicCircularBuffer[PathEntry](dts.concurrency),
 	}
 	batchSize := 1024
 
@@ -84,24 +86,25 @@ func (dts *DirTreeScanner) scanDirTree(entryCh chan<- []PathEntry, errCh chan<- 
 	go func() {
 		defer wg.Done()
 		for {
-			select {
-			case entry, ok := <-ws.outCh:
+			if !ws.buffer.Empty() {
+				entry, _ := ws.buffer.Peek()
+				select {
+				case ws.inCh <- entry:
+					ws.buffer.Dequeue()
+				case entry, ok := <-ws.outCh:
+					if !ok {
+						close(ws.inCh)
+						return
+					}
+					ws.buffer.Enqueue(entry)
+				}
+			} else {
+				entry, ok := <-ws.outCh
 				if !ok {
 					close(ws.inCh)
 					return
 				}
-				ws.buffer = append(ws.buffer, entry)
-			default:
-				break
-			}
-
-			if len(ws.buffer) > 0 {
-				select {
-				case ws.inCh <- ws.buffer[0]:
-					ws.buffer = ws.buffer[1:]
-				default:
-					break
-				}
+				ws.buffer.Enqueue(entry)
 			}
 		}
 	}()
