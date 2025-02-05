@@ -2,7 +2,10 @@ module github.com/vpal/cdirtreescan
 
 go 1.23.2
 
-require github.com/urfave/cli/v2 v2.27.5
+require (
+	github.com/emirpasic/gods/v2 v2.0.0-alpha
+	github.com/urfave/cli/v2 v2.27.5
+)
 
 require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
