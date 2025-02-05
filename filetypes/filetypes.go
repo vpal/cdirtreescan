@@ -38,8 +38,8 @@ const (
 	FileTypeIndicatorCharDevice  FileTypeIndicator = 'c'
 	FileTypeIndicatorDirectory   FileTypeIndicator = 'd'
 	FileTypeIndicatorSymlink     FileTypeIndicator = 'l'
-	FileTypeIndicatorSocket      FileTypeIndicator = 'M'
-	FileTypeIndicatorNamedPipe   FileTypeIndicator = 'P'
+	FileTypeIndicatorSocket      FileTypeIndicator = 's'
+	FileTypeIndicatorNamedPipe   FileTypeIndicator = 'p'
 	FileTypeIndicatorOther       FileTypeIndicator = '?'
 )
 
@@ -99,22 +99,21 @@ var fileTypeDescriptionsPlural = []string{
 }
 
 func GetFileType(pathEntry scan.PathEntry) FileType {
-	dirEntry := pathEntry.Entry
-	switch mode := dirEntry.Type(); {
+	switch mode := pathEntry.Entry.Type(); {
 	case mode.IsDir():
 		return FileTypeDirectory
 	case mode.IsRegular():
 		return FileTypeRegular
 	case mode&fs.ModeSymlink != 0:
 		return FileTypeSymlink
+	case mode&fs.ModeCharDevice != 0:
+		return FileTypeCharDevice
 	case mode&fs.ModeDevice != 0:
 		return FileTypeBlockDevice
 	case mode&fs.ModeNamedPipe != 0:
 		return FileTypeNamedPipe
 	case mode&fs.ModeSocket != 0:
 		return FileTypeSocket
-	case mode&fs.ModeCharDevice != 0:
-		return FileTypeCharDevice
 	default:
 		return FileTypeOther
 	}
